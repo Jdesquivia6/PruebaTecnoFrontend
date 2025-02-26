@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => cargarEmpleados());
 
 async function cargarEmpleados(orden = "") {
     try {
-        const url = `http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados${orden ? `?ordering=${encodeURIComponent(orden)}` : ""}`;
+        const url = `https://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados${orden ? `?ordering=${encodeURIComponent(orden)}` : ""}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         actualizarTabla(await response.json());
@@ -19,7 +19,7 @@ async function filtrarEmpleados(campo) {
     const valor = document.getElementById(`filtro${campo}`).value.trim();
     if (!valor) return cargarEmpleados();
     try {
-        const response = await fetch(`http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleadosFilter/?${campo.toLowerCase()}=${encodeURIComponent(valor)}`);
+        const response = await fetch(`https://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleadosFilter/?${campo.toLowerCase()}=${encodeURIComponent(valor)}`);
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         actualizarTabla(await response.json());
     } catch (error) {
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const empleado = Object.fromEntries(new FormData(formulario));
 
         try {
-            const response = await fetch("http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/registroEmpleados", {
+            const response = await fetch("https://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/registroEmpleados", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(empleado),
@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function cargarDatosEmpleado(id) {
     try {
-        const response = await fetch(`http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados/${id}`);
+        const response = await fetch(`https://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados/${id}`);
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         const empleado = await response.json();
         Object.keys(empleado).forEach(field => {
@@ -164,7 +164,7 @@ document.getElementById("editarEmpleadoForm")?.addEventListener("submit", async 
     const formData = new FormData(this);
     const empleadoData = Object.fromEntries(formData);
     try {
-        const response = await fetch(`http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados/${empleadoId}`, {
+        const response = await fetch(`https://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados/${empleadoId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(empleadoData),
@@ -185,7 +185,7 @@ document.getElementById("editarEmpleadoForm")?.addEventListener("submit", async 
 async function eliminarEmpleado(id) {
     if (!confirm("¿Estás seguro de que deseas eliminar este empleado?")) return;
     try {
-        const response = await fetch(`http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados/${id}`, { method: "DELETE" });
+        const response = await fetch(`https://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/empleados/${id}`, { method: "DELETE" });
         if (response.ok) {
             alert("Empleado eliminado exitosamente.");
             cargarEmpleados();
