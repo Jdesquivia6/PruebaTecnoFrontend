@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/v1/registroUsuario", {
+            const response = await fetch("http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/registroUsuario", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -103,7 +103,7 @@ signInBtn.addEventListener("click", async function (event) {
     
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/api/v1/login", {
+        const response = await fetch("http://ec2-3-137-140-201.us-east-2.compute.amazonaws.com:8000/api/v1/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
