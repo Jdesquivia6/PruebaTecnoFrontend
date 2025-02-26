@@ -6,3 +6,8 @@
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
 }
+
+.table-dark th {
+    background-color: #00A2E2 !important;
+    color: white !important;
+}

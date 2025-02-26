@@ -1,24 +1,19 @@
-document.addEventListener("DOMContentLoaded", () => {
-    cargarEmpleados();
-});
+document.addEventListener("DOMContentLoaded", () => cargarEmpleados());
 
-let estadoOrden = {};
-
-async function cargarEmpleados(orden = '') {
+async function cargarEmpleados(orden = "") {
     try {
-        const url = orden
-            ? `http://127.0.0.1:8000/api/v1/empleados?ordering=${encodeURIComponent(orden)}`
-            : `http://127.0.0.1:8000/api/v1/empleados`;
-
+        const url = `http://127.0.0.1:8000/api/v1/empleados${orden ? `?ordering=${encodeURIComponent(orden)}` : ""}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-        const empleados = await response.json();
-        actualizarTabla(empleados);
+        actualizarTabla(await response.json());
     } catch (error) {
         console.error("Error al cargar empleados:", error);
     }
 }
+
+document.querySelectorAll("[id^='filtro']").forEach(input => {
+    input.addEventListener("input", () => filtrarEmpleados(input.id.replace("filtro", "")));
+});
 
 async function filtrarEmpleados(campo) {
     const valor = document.getElementById(`filtro${campo}`).value.trim();
@@ -31,10 +26,6 @@ async function filtrarEmpleados(campo) {
         console.error(`Error al filtrar empleados por ${campo}:`, error);
     }
 }
-
-document.querySelectorAll("[id^='filtro']").forEach(input => {
-    input.addEventListener("input", () => filtrarEmpleados(input.id.replace("filtro", "")));
-});
 
 function actualizarTabla(empleados) {
     const tbody = document.getElementById("tablaEmpleados");
@@ -68,19 +59,31 @@ document.querySelectorAll(".sortable").forEach(header => {
 function ordenarTabla(columna, header) {
     let tbody = document.getElementById("tablaEmpleados");
     let filas = Array.from(tbody.rows);
+    let estadoOrden = {};
     
-    estadoOrden[columna] = !estadoOrden[columna];
+    if (!(columna in estadoOrden)) {
+        estadoOrden[columna] = true; 
+    } else {
+        estadoOrden[columna] = !estadoOrden[columna]; 
+    }
 
     filas.sort((a, b) => {
-        let valorA = a.querySelector(`td:nth-child(${columna})`).textContent.trim();
-        let valorB = b.querySelector(`td:nth-child(${columna})`).textContent.trim();
+        let valorA = a.cells[columna - 1].textContent.trim();
+        let valorB = b.cells[columna - 1].textContent.trim();
 
-        if (!isNaN(valorA) && !isNaN(valorB)) {
-            valorA = Number(valorA);
-            valorB = Number(valorB);
+        if (columna === 3 || columna === 4) {
+            valorA = valorA.replace(/\D/g, ""); 
+            valorB = valorB.replace(/\D/g, ""); 
+
+            if (!isNaN(valorA) && !isNaN(valorB)) {
+                valorA = Number(valorA);
+                valorB = Number(valorB);
+            }
         }
 
-        return estadoOrden[columna] ? valorA.localeCompare(valorB, undefined, { numeric: true }) : valorB.localeCompare(valorA, undefined, { numeric: true });
+        let comparacion = valorA.localeCompare(valorB, undefined, { numeric: true });
+
+        return estadoOrden[columna] ? comparacion : -comparacion;
     });
 
     tbody.innerHTML = "";
@@ -89,11 +92,12 @@ function ordenarTabla(columna, header) {
     actualizarIconosOrden(header, estadoOrden[columna]);
 }
 
+
 function actualizarIconosOrden(header, ascendente) {
     document.querySelectorAll(".sortable i").forEach(icono => icono.remove());
 
     const icono = document.createElement("i");
-    icono.className = ascendente ? "bi bi-arrow-up" : "bi bi-arrow-down"; 
+    icono.className = ascendente ? "bi bi-caret-up-fill ms-2" : "bi bi-caret-down-fill ms-2"; 
 
     header.appendChild(icono);
 }
@@ -102,8 +106,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const formulario = document.getElementById("formularioEmpleado");
     const modal = new bootstrap.Modal(document.getElementById("agregarEmpleadoModal"));
 
-    formulario.addEventListener("submit", async event => {
+    if (!formulario) {
+        console.error("Error: No se encontró el formulario con ID 'formularioEmpleado'");
+        return;
+    }
+
+    formulario.addEventListener("submit", async (event) => {
         event.preventDefault();
+        console.log("Formulario enviado");
 
         const empleado = Object.fromEntries(new FormData(formulario));
 
@@ -118,32 +128,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (response.ok) {
                 alert(data.message || "Empleado registrado correctamente.");
-                modal.hide();
                 formulario.reset();
+                modal.hide();
                 cargarEmpleados();
             } else {
-                console.error("Error en la solicitud:", error);
+                alert("Error en la solicitud",response.data);
+                console.error("Error en la solicitud:", data);
             }
         } catch (error) {
-            console.error("", error);
+            console.error("Error en la petición:", error);
         }
     });
 });
-
 
 async function cargarDatosEmpleado(id) {
     try {
         const response = await fetch(`http://127.0.0.1:8000/api/v1/empleados/${id}`);
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         const empleado = await response.json();
-
-        window.empleadoActual = { ...empleado };
-
-        ["id", "nombre", "cedula", "fecha_nacimiento", "email", "telefono"].forEach(field => {
+        Object.keys(empleado).forEach(field => {
             const input = document.getElementById(`editar_${field}`);
             if (input) input.value = empleado[field] || "";
         });
-
         new bootstrap.Modal(document.getElementById("editarEmpleadoModal")).show();
     } catch (error) {
         console.error("Error al obtener datos del empleado:", error);
@@ -151,56 +157,28 @@ async function cargarDatosEmpleado(id) {
     }
 }
 
-document.getElementById("editarEmpleadoForm").addEventListener("submit", async function (event) {
+document.getElementById("editarEmpleadoForm")?.addEventListener("submit", async function (event) {
     event.preventDefault();
-
     const empleadoId = document.getElementById("editar_id").value.trim();
-    if (!empleadoId) {
-        alert("Error: No se encontró el ID del empleado.");
-        return;
-    }
-
+    if (!empleadoId) return alert("Error: No se encontró el ID del empleado.");
     const formData = new FormData(this);
-    const empleadoData = {};
-
-    formData.forEach((value, key) => {
-        if (value.trim() !== "") {
-            empleadoData[key] = key === "id" ? Number(value) : value;
-        }
-    });
-
-    console.log("Datos enviados al backend:", JSON.stringify(empleadoData));
-
+    const empleadoData = Object.fromEntries(formData);
     try {
         const response = await fetch(`http://127.0.0.1:8000/api/v1/empleados/${empleadoId}`, {
             method: "PUT",
-            headers: { 
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(empleadoData),
         });
-
-        const data = await response.json();
-        console.log("Respuesta del servidor:", data);
-
         if (response.ok) {
             alert("Empleado actualizado correctamente.");
-            const modalElement = document.getElementById("editarEmpleadoModal");
-            const modalInstance = bootstrap.Modal.getInstance(modalElement);
-            if (modalInstance) {
-                modalInstance.hide();
-            } else {
-                new bootstrap.Modal(modalElement).hide();
-            }
-
+            bootstrap.Modal.getInstance(document.getElementById("editarEmpleadoModal"))?.hide();
             cargarEmpleados();
         } else {
-            alert(`Error: ${data.error || "No se pudo actualizar el empleado."}`);
+            alert("Error al actualizar el empleado.", response.data);
+            alert("Error al actualizar el empleado.");
         }
     } catch (error) {
         console.error("Error en la actualización:", error);
-        alert("Hubo un error al actualizar el empleado.");
     }
 });
 
@@ -216,6 +194,5 @@ async function eliminarEmpleado(id) {
         }
     } catch (error) {
         console.error("Error en la eliminación:", error);
-        alert("Hubo un error al conectar con el servidor.");
     }
 }
